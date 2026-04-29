@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Nomenclaturas</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f0f2f5;
+    --white: #ffffff;
+    --border: #e2e5ea;
+    --border-focus: #1a56db;
+    --text: #1c2130;
+    --muted: #8a93a6;
+    --accent: #1a56db;
+    --accent-light: #eef2fd;
+    --accent-hover: #1448c0;
+    --success: #0e9e6e;
+    --pill-bg: #edf0f5;
+    --result-bg: #1c2130;
+    --sans: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 8px; --radius-sm: 5px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 20px rgba(0,0,0,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); font-family: var(--sans); color: var(--text);
+    min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+    padding: 28px 16px 48px;
+  }
+  .card {
+    background: var(--white); border-radius: 14px; box-shadow: var(--shadow);
+    width: 100%; max-width: 560px; overflow: hidden;
+  }
+
+  /* HEADER */
+  .card-header {
+    padding: 16px 22px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 11px;
+  }
+  .logo-mark {
+    width: 34px; height: 34px; background: var(--accent); border-radius: 7px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .logo-mark svg { width: 16px; height: 16px; }
+  .header-text { flex: 1; }
+  .header-text h1 { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
+  .header-text p  { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .btn-settings {
+    width: 32px; height: 32px; border-radius: 7px; border: 1px solid var(--border);
+    background: var(--white); cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s; flex-shrink: 0; color: var(--muted);
+  }
+  .btn-settings:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .btn-settings.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-settings svg { width: 15px; height: 15px; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* BODY */
+  .card-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field-label {
+    font-size: 10.5px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.08em;
+  }
+
+  /* INPUTS */
+  input[type="text"] {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 8px 11px; font-family: var(--mono); font-size: 13px; color: var(--text);
+    background: var(--white); outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  input[type="text"]:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+  input[type="text"]::placeholder { color: var(--muted); text-transform: none; font-size: 12px; letter-spacing: 0; opacity: 0.6; font-family: var(--sans); }
+
+  /* SELECT */
+  .select-wrap { position: relative; }
+  .select-wrap::after { content: '▾'; position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--muted); pointer-events: none; }
+  select {
+    width: 100%; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 8px 28px 8px 11px; font-family: var(--sans); font-size: 13px;
+    color: var(--text); background: var(--white); outline: none; cursor: pointer; appearance: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  select:focus { border-color: var(--border-focus); box-shadow: 0 0 0 3px rgba(26,86,219,0.1); }
+  option { background: #fff; }
+
+  /* PILLS */
+  .pill-group { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pill-group-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+  .pill {
+    background: var(--pill-bg); border: 1.5px solid transparent; border-radius: 6px;
+    padding: 7px 13px; font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+    color: var(--text); cursor: pointer; transition: all 0.12s; white-space: nowrap; text-align: center;
+  }
+  .pill:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .pill.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .pill-outro { grid-column: 1 / -1; background: #f7f8fa; color: var(--muted); border: 1.5px dashed #d0d4dd; }
+  .pill-outro:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); border-style: solid; }
+  .pill-outro.active { background: var(--accent); border-color: var(--accent); color: #fff; border-style: solid; }
+
+  /* CARGO ROW */
+  .cargo-row { display: flex; gap: 8px; align-items: flex-start; }
+  .cargo-row .pill-group { flex-shrink: 0; }
+  .cargo-row input { flex: 1; }
+
+  /* RESULT */
+  .result-area { background: var(--result-bg); border-radius: var(--radius); padding: 14px 16px; }
+  .result-meta { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: #4a5572; margin-bottom: 7px; }
+  .result-text { font-family: var(--mono); font-size: 15px; font-weight: 700; color: #f0c94a; letter-spacing: 0.03em; word-break: break-all; line-height: 1.5; min-height: 22px; }
+  .result-text.empty { color: #3a4262; font-style: italic; font-size: 12.5px; font-weight: 400; }
+  .result-text .sep { color: #ffffff; }
+  .result-text .ext { color: #6ea8fe; font-weight: 500; }
+  .result-actions { display: flex; gap: 8px; margin-top: 11px; }
+  .btn-copy { flex: 1; background: var(--accent); color: #fff; border: none; border-radius: var(--radius-sm); padding: 8px 14px; font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.12s; }
+  .btn-copy:hover { background: var(--accent-hover); }
+  .btn-copy.copied { background: var(--success); }
+  .btn-reset { background: transparent; color: #606880; border: 1px solid #3a4060; border-radius: var(--radius-sm); padding: 8px 14px; font-family: var(--sans); font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.12s; }
+  .btn-reset:hover { color: #fff; border-color: #6a7090; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: var(--border); }
+
+  /* HISTORY */
+  .history-wrap { padding: 14px 22px 20px; }
+  .history-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .history-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .history-empty { font-size: 12px; color: var(--muted); font-style: italic; }
+  .history-list { display: flex; flex-direction: column; gap: 4px; }
+  .history-item {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    background: var(--bg); border-radius: var(--radius-sm); border: 1px solid var(--border);
+    cursor: pointer; transition: border-color 0.12s;
+  }
+  .history-item:hover { border-color: var(--accent); background: var(--accent-light); }
+  .history-nom { font-family: var(--mono); font-size: 12px; color: var(--text); word-break: break-all; flex: 1; }
+  .history-item:hover .history-nom { color: var(--accent); }
+  .history-hint { font-size: 10px; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .history-copy {
+    background: var(--white); border: 1px solid var(--border); color: var(--muted);
+    font-family: var(--sans); font-size: 11px; font-weight: 600;
+    cursor: pointer; padding: 4px 9px; border-radius: 4px;
+    white-space: nowrap; flex-shrink: 0; transition: all 0.1s;
+  }
+  .history-copy:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* CONFIG NOTICE */
+  .config-notice {
+    display: flex; align-items: center; gap: 8px;
+    background: #fffbea; border: 1px solid #f0d060; border-radius: 6px;
+    padding: 8px 12px; font-size: 11.5px; color: #7a6010;
+  }
+  .config-notice svg { width: 14px; height: 14px; flex-shrink: 0; }
+  .config-notice.ok { background: #edfaf3; border-color: #a0ddc0; color: #1a6640; }
+
+  /* SETTINGS */
+  .settings-body { padding: 18px 22px 24px; }
+  .settings-type-tabs { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 18px; }
+  .tab-btn { background: var(--pill-bg); border: 1.5px solid transparent; border-radius: 6px; padding: 6px 14px; font-family: var(--sans); font-size: 12.5px; font-weight: 500; color: var(--text); cursor: pointer; transition: all 0.12s; }
+  .tab-btn:hover { background: var(--accent-light); border-color: var(--accent); color: var(--accent); }
+  .tab-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .settings-panel { display: none; }
+  .settings-panel.active { display: block; }
+  .settings-section-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  .settings-table { width: 100%; border-collapse: collapse; }
+  .settings-table thead th { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); text-align: left; padding: 0 10px 8px; }
+  .settings-table thead th:last-child { text-align: right; }
+  .settings-table tbody tr { border-top: 1px solid var(--border); }
+  .settings-table tbody tr:first-child { border-top: none; }
+  .settings-table tbody td { padding: 9px 10px; font-size: 13px; }
+  .settings-table td.label-col { color: var(--text); font-weight: 500; }
+  .settings-table td.code-col { text-align: right; font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 500; letter-spacing: 0.04em; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- HEADER -->
+  <div class="card-header">
+    <div class="logo-mark">
+      <svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="3" width="16" height="2" rx="1" fill="white"/>
+        <rect x="2" y="7" width="11" height="2" rx="1" fill="white"/>
+        <rect x="2" y="11" width="16" height="2" rx="1" fill="white"/>
+        <rect x="2" y="15" width="11" height="2" rx="1" fill="white"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Gerador de Nomenclaturas</h1>
+      <p>Sistema de identificação de ficheiros · TV</p>
+    </div>
+    <button class="btn-settings" id="settingsBtn" onclick="toggleSettings()" title="Configurações">
+      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="10" cy="10" r="2.5"/>
+        <path d="M10 2v1.5M10 16.5V18M2 10h1.5M16.5 10H18M4.1 4.1l1.06 1.06M14.84 14.84l1.06 1.06M4.1 15.9l1.06-1.06M14.84 5.16l1.06-1.06"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ══ GENERATOR ══ -->
+  <div class="view active" id="viewGenerator">
+    <div class="card-body">
+
+      <div class="config-notice hidden" id="configNotice"></div>
+
+      <!-- TIPO -->
+      <div class="field">
+        <div class="field-label">Tipo</div>
+        <div class="pill-group" id="typeGroup">
+          <button class="pill" data-code="CHA"  data-needs-person="false" data-needs-cargo="false" data-needs-local="false" data-needs-campanha="true"  data-needs-titulo="false" onclick="selectType(this)">Chamada</button>
+          <button class="pill" data-code="MAT"  data-needs-person="false" data-needs-cargo="false" data-needs-local="false" data-needs-campanha="false" data-needs-titulo="true"  onclick="selectType(this)">Matéria</button>
+          <button class="pill" data-code="RES"  data-needs-person="false" data-needs-cargo="false" data-needs-local="false" data-needs-campanha="true"  data-needs-titulo="false" onclick="selectType(this)">Resumo</button>
+          <button class="pill" data-code="REU"  data-needs-person="true"  data-needs-cargo="true"  data-needs-local="true"  data-needs-campanha="false" data-needs-titulo="false" onclick="selectType(this)">Reunião</button>
+          <button class="pill" data-code="TEST" data-needs-person="true"  data-needs-cargo="false" data-needs-local="false" data-needs-campanha="false" data-needs-titulo="false" onclick="selectType(this)">Testemunho</button>
+        </div>
+      </div>
+
+      <!-- CATEGORIAS CAMPANHA -->
+      <div class="field hidden" id="campanhaSection">
+        <div class="field-label" id="campanhaLabel">Categorias de Chamadas</div>
+        <div class="pill-group-grid" id="campanhaGroup"></div>
+      </div>
+
+      <!-- TÍTULO -->
+      <div class="field hidden" id="tituloSection">
+        <div class="field-label">Título</div>
+        <input type="text" id="tituloInput" placeholder="Título" oninput="updateResult()" />
+      </div>
+
+      <!-- CATEGORIAS EVENTO -->
+      <div class="field hidden" id="eventoSection">
+        <div class="field-label" id="eventoLabel">Categorias</div>
+        <div class="pill-group-grid" id="eventoGroup">
+          <button class="pill pill-outro" data-code="OUTRO" onclick="selectEvento(this)">Outro…</button>
+        </div>
+        <input type="text" id="eventoCustom" class="hidden" placeholder="Digite o nome" oninput="updateResult()" style="margin-top:6px;" />
+      </div>
+
+      <!-- PASTOR / BISPO -->
+      <div class="field hidden" id="pessoaSection">
+        <div class="field-label" id="pessoaLabel">—</div>
+        <div class="hidden" id="cargoRow">
+          <div class="cargo-row">
+            <div class="pill-group" id="cargoGroup"></div>
+            <input type="text" id="pessoaInput" placeholder="Nome" oninput="updateResult()" />
+          </div>
+        </div>
+        <input type="text" id="pessoaNomeOnly" class="hidden" placeholder="Nome do testemunho" oninput="updateResult()" />
+      </div>
+
+      <!-- DATA -->
+      <div class="field">
+        <div class="field-label">Data</div>
+        <div style="display:flex;gap:8px;">
+          <div class="select-wrap" style="flex:0.7;"><select id="diaSelect" onchange="updateResult()"></select></div>
+          <div class="select-wrap" style="flex:1.3;">
+            <select id="mesSelect" onchange="updateResult()">
+              <option value="JAN">Janeiro</option><option value="FEV">Fevereiro</option>
+              <option value="MAR">Março</option><option value="ABR">Abril</option>
+              <option value="MAI">Maio</option><option value="JUN">Junho</option>
+              <option value="JUL">Julho</option><option value="AGO">Agosto</option>
+              <option value="SET">Setembro</option><option value="OUT">Outubro</option>
+              <option value="NOV">Novembro</option><option value="DEZ">Dezembro</option>
+            </select>
+          </div>
+          <div class="select-wrap" style="flex:0.8;">
+            <select id="anoSelect" onchange="updateResult()">
+              <option value="25">2025</option><option value="26">2026</option>
+              <option value="27">2027</option><option value="28">2028</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- FONTE DE GRAVAÇÃO -->
+      <div class="field hidden" id="localSection">
+        <div class="field-label">Fonte de Gravação</div>
+        <div class="pill-group-grid" id="localGroup"></div>
+      </div>
+
+      <!-- VERSÃO + EXTENSÃO -->
+      <div style="display:flex; gap:12px; align-items:flex-end;">
+        <div class="field" style="width:160px; flex-shrink:0;">
+          <div class="field-label">Versão <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;">(opcional)</span></div>
+          <div class="select-wrap">
+            <select id="versaoSelect" onchange="onVersaoChange()">
+              <option value="">— Sem versão</option>
+              <option value="V1">V1</option>
+              <option value="V2">V2</option>
+              <option value="V3">V3</option>
+              <option value="V4">V4</option>
+              <option value="V5">V5</option>
+            </select>
+          </div>
+        </div>
+        <div class="field" style="flex:1;">
+          <div class="field-label">Tipo da Extensão</div>
+          <div class="pill-group" id="extGroup">
+            <button class="pill" data-ext=".mp4" onclick="selectExt(this)">.mp4</button>
+            <button class="pill" data-ext=".mov" onclick="selectExt(this)">.mov</button>
+            <button class="pill" data-ext=".mxf" onclick="selectExt(this)">.mxf</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- NOMENCLATURA -->
+      <div class="result-area">
+        <div class="result-meta">Nomenclatura</div>
+        <div class="result-text empty" id="resultValue">Preencha os campos para gerar…</div>
+        <div class="result-actions hidden" id="resultActions">
+          <button class="btn-copy" id="copyBtn" onclick="copyResult()">Copiar</button>
+          <button class="btn-reset" onclick="resetAll()">Limpar</button>
+        </div>
+      </div>
+
+    </div><!-- /card-body -->
+
+    <div class="divider"></div>
+    <div class="history-wrap">
+      <div class="history-label">Histórico <span style="font-size:10px;font-weight:400;text-transform:none;letter-spacing:0;">(clique para preencher)</span></div>
+      <div id="historyContainer"><div class="history-empty">Nenhuma nomenclatura gerada ainda.</div></div>
+    </div>
+  </div><!-- /viewGenerator -->
+
+  <!-- ══ SETTINGS ══ -->
+  <div class="view" id="viewSettings">
+    <div class="settings-body">
+      <div class="settings-type-tabs">
+        <button class="tab-btn active" onclick="showSettingsTab('CHA',this)">Chamada</button>
+        <button class="tab-btn" onclick="showSettingsTab('MAT',this)">Matéria</button>
+        <button class="tab-btn" onclick="showSettingsTab('RES',this)">Resumo</button>
+        <button class="tab-btn" onclick="showSettingsTab('REU',this)">Reunião</button>
+        <button class="tab-btn" onclick="showSettingsTab('TEST',this)">Testemunho</button>
+      </div>
+      <div class="settings-panel active" id="settingsPanel-CHA"><div class="settings-section-title">Categorias de Chamadas</div><table class="settings-table"><thead><tr><th>Etiqueta</th><th>Sigla</th></tr></thead><tbody id="settingsTbody-CHA"></tbody></table></div>
+      <div class="settings-panel" id="settingsPanel-MAT"><div class="settings-section-title">Categorias de Matérias</div><table class="settings-table"><thead><tr><th>Etiqueta</th><th>Sigla</th></tr></thead><tbody id="settingsTbody-MAT"></tbody></table></div>
+      <div class="settings-panel" id="settingsPanel-RES"><div class="settings-section-title">Categorias de Resumos</div><table class="settings-table"><thead><tr><th>Etiqueta</th><th>Sigla</th></tr></thead><tbody id="settingsTbody-RES"></tbody></table></div>
+      <div class="settings-panel" id="settingsPanel-REU">
+        <div class="settings-section-title">Categorias de Reuniões</div><table class="settings-table"><thead><tr><th>Etiqueta</th><th>Sigla</th></tr></thead><tbody id="settingsTbody-REU"></tbody></table>
+        <div class="settings-section-title" style="margin-top:18px;">Fonte de Gravação</div><table class="settings-table"><thead><tr><th>Etiqueta</th><th>Sigla</th></tr></thead><tbody id="settingsTbody-LOCAL"></tbody></table>
+        <div class="settings-section-title" style="margin-top:18px;">Pastor / Bispo</div><table class="settings-table"><thead><tr><th>Cargo</th><th>Prefixo</th></tr></thead><tbody id="settingsTbody-CARGO"></tbody></table>
+      </div>
+      <div class="settings-panel" id="settingsPanel-TEST"><div class="settings-section-title">Categorias de Testemunhos</div><table class="settings-table"><thead><tr><th>Etiqueta</th><th>Sigla</th></tr></thead><tbody id="settingsTbody-TEST"></tbody></table></div>
+    </div>
+  </div>
+
+</div><!-- /card -->
+
+<script>
+  const MESES = ['JAN','FEV','MAR','ABR','MAI','JUN','JUL','AGO','SET','OUT','NOV','DEZ'];
+  let CFG = null; // loaded from JSON
+  let selectedType = null, selectedLocal = null, selectedExt = null, selectedVersao = null;
+  let selectedEvento = null, selectedCampanha = null, selectedCargo = null;
+  let historyItems = [];
+
+  /* ── normalize ── */
+  function normalize(str) {
+    return str.toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/\s+/g,'_')
+      .replace(/[^A-Z0-9\-_]/g,'');
+  }
+
+  /* ── days ── */
+  (function(){
+    const sel = document.getElementById('diaSelect');
+    for(let i=1;i<=31;i++){const o=document.createElement('option');o.value=String(i).padStart(2,'0');o.textContent=o.value;sel.appendChild(o);}
+  })();
+
+  /* ── today ── */
+  (function(){
+    const t=new Date();
+    document.getElementById('diaSelect').value=String(t.getDate()).padStart(2,'0');
+    document.getElementById('mesSelect').value=MESES[t.getMonth()];
+    const yr=String(t.getFullYear()).slice(-2);
+    for(const o of document.getElementById('anoSelect').options){if(o.value===yr){document.getElementById('anoSelect').value=yr;break;}}
+  })();
+
+  /* ── build pills from config ── */
+  function buildPillGroup(containerId, items, onclickFn, extraClass='') {
+    const el = document.getElementById(containerId);
+    el.innerHTML = '';
+    items.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = 'pill' + (extraClass ? ' '+extraClass : '');
+      btn.dataset.code = item.code;
+      btn.textContent = item.label;
+      btn.onclick = () => onclickFn(btn);
+      el.appendChild(btn);
+    });
+    // outro for evento
+    if (containerId === 'eventoGroup') {
+      const outro = document.createElement('button');
+      outro.className = 'pill pill-outro';
+      outro.dataset.code = 'OUTRO';
+      outro.textContent = 'Outro…';
+      outro.onclick = () => selectEvento(outro);
+      el.appendChild(outro);
+    }
+  }
+
+  function buildSettingsTable(tbodyId, items) {
+    const tb = document.getElementById(tbodyId);
+    if (!tb) return;
+    tb.innerHTML = items.map(i => `<tr><td class="label-col">${i.label}</td><td class="code-col">${i.code}</td></tr>`).join('');
+  }
+
+  /* ══════════════════════════════════════════════════════
+     CONFIGURAÇÃO — edite aqui as categorias e siglas
+     Estrutura: { "label": "Nome visível", "code": "SIGLA" }
+     ══════════════════════════════════════════════════════ */
+  CFG = {
+    chamada: [
+      { label: "Domingo",                   code: "DOM"       },
+      { label: "Domingo 17H",               code: "DOM17H"    },
+      { label: "Corrente dos 70",           code: "C70"       },
+      { label: "Terapia do Amor",           code: "TERAPIA"   },
+      { label: "Jejum de Daniel",           code: "JD"        },
+      { label: "Fogueira Santa",            code: "FS"        },
+      { label: "Congresso da Prosperidade", code: "CONGRESSO" },
+      { label: "Sessão do Descarrego",      code: "SEXTA"     },
+      { label: "Obreiros em Foco",          code: "OBREIROS"  },
+      { label: "Unisocial",                 code: "UNISOCIAL" },
+      { label: "Neutra",                    code: "NEUTRA"    }
+    ],
+    materia: [
+      { label: "Conc. de Fé e Milagres",   code: "CONCENTRACAO" },
+      { label: "Escola da Fé Inteligente", code: "QUARTA"       },
+      { label: "Terapia do Amor",          code: "TERAPIA"      },
+      { label: "Sessão do Descarrego",     code: "DESCARREGO"   },
+      { label: "Congresso da Prosperidade",code: "CONGRESSO"    },
+      { label: "Corrente dos 70",          code: "C70"          },
+      { label: "Intellimen",               code: "INTELLIMEN"   },
+      { label: "Auto-Ajuda",               code: "AUTO-AJUDA"   }
+    ],
+    resumo: [
+      { label: "Domingo",                   code: "DOM"       },
+      { label: "Domingo 17H",               code: "DOM17H"    },
+      { label: "Corrente dos 70",           code: "C70"       },
+      { label: "Terapia do Amor",           code: "TERAPIA"   },
+      { label: "Jejum de Daniel",           code: "JD"        },
+      { label: "Fogueira Santa",            code: "FS"        },
+      { label: "Congresso da Prosperidade", code: "CONGRESSO" },
+      { label: "Sessão do Descarrego",      code: "SEXTA"     },
+      { label: "Obreiros em Foco",          code: "OBREIROS"  },
+      { label: "Unisocial",                 code: "UNISOCIAL" },
+      { label: "Neutra",                    code: "NEUTRA"    }
+    ],
+    reuniao: [
+      { label: "Conc. de Fé e Milagres",   code: "CONCENTRACAO" },
+      { label: "Escola da Fé Inteligente", code: "QUARTA"       },
+      { label: "Terapia do Amor",          code: "TERAPIA"      },
+      { label: "Sessão do Descarrego",     code: "DESCARREGO"   },
+      { label: "Congresso da Prosperidade",code: "CONGRESSO"    },
+      { label: "Corrente dos 70",          code: "C70"          },
+      { label: "Intellimen",               code: "INTELLIMEN"   },
+      { label: "Auto-Ajuda",               code: "AUTO-AJUDA"   }
+    ],
+    testemunho: [
+      { label: "Conc. de Fé e Milagres",   code: "CONCENTRACAO" },
+      { label: "Escola da Fé Inteligente", code: "QUARTA"       },
+      { label: "Terapia do Amor",          code: "TERAPIA"      },
+      { label: "Sessão do Descarrego",     code: "DESCARREGO"   },
+      { label: "Congresso da Prosperidade",code: "CONGRESSO"    },
+      { label: "Corrente dos 70",          code: "C70"          },
+      { label: "Intellimen",               code: "INTELLIMEN"   },
+      { label: "Auto-Ajuda",               code: "AUTO-AJUDA"   }
+    ],
+    fonteGravacao: [
+      { label: "Santuário",        code: "SANTUARIO"      },
+      { label: "Régie",            code: "REGIE"          },
+      { label: "Câmera Principal", code: "PRINCIPAL"      },
+      { label: "Grua",             code: "GRUA"           },
+      { label: "Lateral",          code: "LATERAL"        },
+      { label: "Externa",          code: "EXTERNA"        },
+      { label: "Estacionamento",   code: "ESTACIONAMENTO" },
+      { label: "Salão Nobre",      code: "SNOBRE"         },
+      { label: "Altar",            code: "ALTAR"          },
+      { label: "Apoio 01",         code: "APOIO_1"        },
+      { label: "Apoio 02",         code: "APOIO_2"        },
+      { label: "Apoio 03",         code: "APOIO_3"        }
+    ],
+    cargo: [
+      { label: "Bispo",  code: "BP" },
+      { label: "Pastor", code: "PR" }
+    ]
+  };
+  /* ══ FIM DA CONFIGURAÇÃO ══ */
+
+  function loadConfig() {
+    const notice = document.getElementById('configNotice');
+    buildPillGroup('campanhaGroup', CFG.chamada,       selectCampanha);
+    buildPillGroup('eventoGroup',   CFG.reuniao,       selectEvento);
+    buildPillGroup('localGroup',    CFG.fonteGravacao, selectLocal);
+    buildPillGroup('cargoGroup',    CFG.cargo,         selectCargoBtn);
+    buildSettingsTable('settingsTbody-CHA',   CFG.chamada);
+    buildSettingsTable('settingsTbody-MAT',   CFG.materia);
+    buildSettingsTable('settingsTbody-RES',   CFG.resumo);
+    buildSettingsTable('settingsTbody-REU',   CFG.reuniao);
+    buildSettingsTable('settingsTbody-LOCAL', CFG.fonteGravacao);
+    buildSettingsTable('settingsTbody-CARGO', CFG.cargo);
+    buildSettingsTable('settingsTbody-TEST',  CFG.testemunho);
+    notice.classList.add('hidden');
+  }
+
+  /* ── settings ── */
+  function toggleSettings() {
+    const gen = document.getElementById('viewGenerator');
+    const set = document.getElementById('viewSettings');
+    const btn = document.getElementById('settingsBtn');
+    const isSet = set.classList.contains('active');
+    gen.classList.toggle('active', isSet);
+    set.classList.toggle('active', !isSet);
+    btn.classList.toggle('active', !isSet);
+  }
+
+  function showSettingsTab(code, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.settings-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('settingsPanel-'+code).classList.add('active');
+  }
+
+  /* ── tipo ── */
+  function selectType(btn) {
+    document.querySelectorAll('#typeGroup .pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedType = {
+      code:          btn.dataset.code,
+      needsPerson:   btn.dataset.needsPerson   ==='true',
+      needsCargo:    btn.dataset.needsCargo    ==='true',
+      needsLocal:    btn.dataset.needsLocal    ==='true',
+      needsCampanha: btn.dataset.needsCampanha ==='true',
+      needsTitulo:   btn.dataset.needsTitulo   ==='true'
+    };
+
+    selectedEvento=null; selectedCampanha=null;
+    document.querySelectorAll('#eventoGroup .pill, #campanhaGroup .pill').forEach(b=>b.classList.remove('active'));
+    document.getElementById('eventoCustom').value='';
+    document.getElementById('eventoCustom').classList.add('hidden');
+
+    const eventoSec   = document.getElementById('eventoSection');
+    const campanhaSec = document.getElementById('campanhaSection');
+    const campanhaLbl = document.getElementById('campanhaLabel');
+    const eventoLbl   = document.getElementById('eventoLabel');
+    const tituloSec   = document.getElementById('tituloSection');
+    const tituloInput = document.getElementById('tituloInput');
+
+    if (selectedType.needsCampanha) {
+      campanhaSec.classList.remove('hidden');
+      campanhaLbl.textContent = selectedType.code==='RES' ? 'Categorias de Resumos' : 'Categorias de Chamadas';
+      // rebuild campanha pills for correct type
+      const items = selectedType.code==='RES' ? CFG.resumo : CFG.chamada;
+      buildPillGroup('campanhaGroup', items, selectCampanha);
+      eventoSec.classList.add('hidden');
+      tituloSec.classList.remove('hidden');
+    } else {
+      campanhaSec.classList.add('hidden');
+      eventoSec.classList.remove('hidden');
+      const labelMap = {MAT:'Categorias de Matérias', REU:'Categorias de Reuniões', TEST:'Categorias de Testemunhos'};
+      eventoLbl.textContent = labelMap[selectedType.code] || 'Categorias';
+      const itemMap = {MAT:CFG.materia, REU:CFG.reuniao, TEST:CFG.testemunho};
+      buildPillGroup('eventoGroup', itemMap[selectedType.code] || CFG.reuniao, selectEvento);
+      if (selectedType.needsTitulo) {
+        tituloSec.classList.remove('hidden');
+      } else {
+        tituloSec.classList.add('hidden');
+        tituloInput.value='';
+      }
+    }
+
+    const ps=document.getElementById('pessoaSection');
+    const cargoRow=document.getElementById('cargoRow');
+    const nomeOnly=document.getElementById('pessoaNomeOnly');
+    const lbl=document.getElementById('pessoaLabel');
+    if (selectedType.needsPerson) {
+      ps.classList.remove('hidden');
+      if (selectedType.needsCargo) {
+        lbl.textContent='Pastor / Bispo';
+        cargoRow.classList.remove('hidden');
+        nomeOnly.classList.add('hidden'); nomeOnly.value='';
+      } else {
+        lbl.textContent='Nome do Testemunho';
+        cargoRow.classList.add('hidden');
+        document.getElementById('pessoaInput').value='';
+        document.querySelectorAll('#cargoGroup .pill').forEach(b=>b.classList.remove('active'));
+        selectedCargo=null;
+        nomeOnly.classList.remove('hidden');
+      }
+    } else {
+      ps.classList.add('hidden');
+      document.getElementById('pessoaInput').value='';
+      document.getElementById('pessoaNomeOnly').value='';
+      document.querySelectorAll('#cargoGroup .pill').forEach(b=>b.classList.remove('active'));
+      selectedCargo=null;
+    }
+
+    const ls=document.getElementById('localSection');
+    if (selectedType.needsLocal) {
+      ls.classList.remove('hidden');
+    } else {
+      ls.classList.add('hidden');
+      document.querySelectorAll('#localGroup .pill').forEach(b=>b.classList.remove('active'));
+      selectedLocal=null;
+    }
+
+    updateResult();
+  }
+
+  /* ── selectors ── */
+  function selectEvento(btn) {
+    document.querySelectorAll('#eventoGroup .pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedEvento=btn.dataset.code;
+    const c=document.getElementById('eventoCustom');
+    if(selectedEvento==='OUTRO'){c.classList.remove('hidden');c.focus();}
+    else{c.classList.add('hidden');c.value='';}
+    updateResult();
+  }
+
+  function getEvento() {
+    if(!selectedEvento) return '';
+    if(selectedEvento==='OUTRO') return normalize(document.getElementById('eventoCustom').value.trim());
+    return selectedEvento;
+  }
+
+  function selectCampanha(btn) {
+    document.querySelectorAll('#campanhaGroup .pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCampanha=btn.dataset.code;
+    updateResult();
+  }
+
+  function selectCargoBtn(btn) {
+    document.querySelectorAll('#cargoGroup .pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCargo=btn.dataset.code;
+    updateResult();
+  }
+
+  function selectLocal(btn) {
+    document.querySelectorAll('#localGroup .pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedLocal=btn.dataset.code;
+    updateResult();
+  }
+
+  function onVersaoChange() {
+    const v = document.getElementById('versaoSelect').value;
+    selectedVersao = v || null;
+    updateResult();
+  }
+
+  function selectExt(btn) {
+    document.querySelectorAll('#extGroup .pill').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedExt=btn.dataset.ext;
+    updateResult();
+  }
+
+  /* ── build nomenclatura ── */
+  function buildNomenclatura() {
+    if(!selectedType) return null;
+    const dia=document.getElementById('diaSelect').value;
+    const mes=document.getElementById('mesSelect').value;
+    const ano=document.getElementById('anoSelect').value;
+    if(!dia||!mes||!ano||!selectedExt) return null;
+
+    let segmento='';
+    if(selectedType.needsCampanha){
+      if(!selectedCampanha) return null;
+      const titulo=normalize(document.getElementById('tituloInput').value.trim());
+      if(!titulo) return null;
+      segmento=selectedCampanha+'_'+titulo;
+    } else {
+      const evento=getEvento();
+      if(!evento) return null;
+      if(selectedType.needsTitulo){
+        const titulo=normalize(document.getElementById('tituloInput').value.trim());
+        if(!titulo) return null;
+        segmento=evento+'_'+titulo;
+      } else {
+        segmento=evento;
+      }
+    }
+
+    if(selectedType.needsLocal&&!selectedLocal) return null;
+
+    let pessoaCode='';
+    if(selectedType.needsPerson){
+      if(selectedType.needsCargo){
+        if(!selectedCargo) return null;
+        const nome=normalize(document.getElementById('pessoaInput').value.trim());
+        if(!nome) return null;
+        pessoaCode=selectedCargo+nome;
+      } else {
+        const nome=normalize(document.getElementById('pessoaNomeOnly').value.trim());
+        if(!nome) return null;
+        pessoaCode=nome;
+      }
+    }
+
+    const parts=[selectedType.code, segmento];
+    if(pessoaCode) parts.push(pessoaCode);
+    if(selectedVersao) parts.push(selectedVersao);
+    parts.push(`${dia}${mes}${ano}`);
+    if(selectedType.needsLocal) parts.push(selectedLocal);
+
+    return parts.join('_')+selectedExt;
+  }
+
+  /* ── render ── */
+  function updateResult() {
+    const nom=buildNomenclatura();
+    const rv=document.getElementById('resultValue');
+    const actions=document.getElementById('resultActions');
+    if(!nom){
+      rv.className='result-text empty';
+      rv.textContent='Preencha os campos para gerar…';
+      actions.classList.add('hidden');
+      return;
+    }
+    rv.className='result-text';
+    const extMatch=nom.match(/(\.\w+)$/);
+    const base=extMatch?nom.slice(0,-extMatch[1].length):nom;
+    const ext=extMatch?extMatch[1]:'';
+    rv.innerHTML=base.split('_').map((p,i,a)=>
+      `${p}${i<a.length-1?'<span class="sep">_</span>':''}`
+    ).join('')+(ext?`<span class="ext">${ext}</span>`:'');
+    actions.classList.remove('hidden');
+  }
+
+  /* ── copy ── */
+  function copyResult() {
+    const nom=buildNomenclatura();
+    if(!nom) return;
+    navigator.clipboard.writeText(nom);
+    const btn=document.getElementById('copyBtn');
+    btn.textContent='✓ Copiado';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='Copiar';btn.classList.remove('copied');},2000);
+    addToHistory(nom);
+  }
+
+  /* ── history ── */
+  /* Each history item stores the full nomenclatura + a state snapshot for prefill */
+  function addToHistory(nom) {
+    // capture current state snapshot
+    const snap = captureState();
+    // remove duplicate
+    historyItems = historyItems.filter(h => h.nom !== nom);
+    historyItems.unshift({ nom, snap });
+    if(historyItems.length>8) historyItems.pop();
+    renderHistory();
+  }
+
+  function captureState() {
+    return {
+      typeCode:      selectedType ? selectedType.code : null,
+      campanha:      selectedCampanha,
+      evento:        selectedEvento,
+      eventoCustom:  document.getElementById('eventoCustom').value,
+      titulo:        document.getElementById('tituloInput').value,
+      cargo:         selectedCargo,
+      pessoaNome:    document.getElementById('pessoaInput').value,
+      pessoaNomeOnly:document.getElementById('pessoaNomeOnly').value,
+      local:         selectedLocal,
+      dia:           document.getElementById('diaSelect').value,
+      mes:           document.getElementById('mesSelect').value,
+      ano:           document.getElementById('anoSelect').value,
+      versao:        selectedVersao,
+      ext:           selectedExt
+    };
+  }
+
+  function restoreState(snap) {
+    resetAll(true); // silent reset
+
+    // type
+    if(snap.typeCode) {
+      const typeBtn = document.querySelector(`#typeGroup .pill[data-code="${snap.typeCode}"]`);
+      if(typeBtn) selectType(typeBtn);
+    }
+
+    // campanha
+    if(snap.campanha) {
+      const btn = document.querySelector(`#campanhaGroup .pill[data-code="${snap.campanha}"]`);
+      if(btn) selectCampanha(btn);
+    }
+
+    // evento
+    if(snap.evento) {
+      const btn = document.querySelector(`#eventoGroup .pill[data-code="${snap.evento}"]`);
+      if(btn) selectEvento(btn);
+      if(snap.evento==='OUTRO') {
+        document.getElementById('eventoCustom').value = snap.eventoCustom || '';
+      }
+    }
+
+    // titulo
+    if(snap.titulo) document.getElementById('tituloInput').value = snap.titulo;
+
+    // cargo
+    if(snap.cargo) {
+      const btn = document.querySelector(`#cargoGroup .pill[data-code="${snap.cargo}"]`);
+      if(btn) selectCargoBtn(btn);
+    }
+    if(snap.pessoaNome) document.getElementById('pessoaInput').value = snap.pessoaNome;
+    if(snap.pessoaNomeOnly) document.getElementById('pessoaNomeOnly').value = snap.pessoaNomeOnly;
+
+    // local
+    if(snap.local) {
+      const btn = document.querySelector(`#localGroup .pill[data-code="${snap.local}"]`);
+      if(btn) selectLocal(btn);
+    }
+
+    // date
+    if(snap.dia) document.getElementById('diaSelect').value = snap.dia;
+    if(snap.mes) document.getElementById('mesSelect').value = snap.mes;
+    if(snap.ano) document.getElementById('anoSelect').value = snap.ano;
+
+    // versao
+    if(snap.versao) {
+      document.getElementById('versaoSelect').value = snap.versao;
+      selectedVersao = snap.versao;
+    }
+
+    // ext
+    if(snap.ext) {
+      const btn = document.querySelector(`#extGroup .pill[data-ext="${snap.ext}"]`);
+      if(btn) selectExt(btn);
+    }
+
+    updateResult();
+  }
+
+  function renderHistory() {
+    const c=document.getElementById('historyContainer');
+    if(!historyItems.length){
+      c.innerHTML='<div class="history-empty">Nenhuma nomenclatura gerada ainda.</div>';
+      return;
+    }
+    c.innerHTML=`<div class="history-list">${historyItems.map((h,idx)=>`
+      <div class="history-item" onclick="handleHistoryClick(event,${idx})">
+        <span class="history-nom">${h.nom}</span>
+        <span class="history-hint">↩ preencher</span>
+        <button class="history-copy" onclick="event.stopPropagation();copyText('${h.nom}',this)">Copiar</button>
+      </div>`).join('')}</div>`;
+  }
+
+  function handleHistoryClick(event, idx) {
+    // don't fire if copy button was clicked
+    if(event.target.classList.contains('history-copy')) return;
+    restoreState(historyItems[idx].snap);
+  }
+
+  function copyText(text,btn) {
+    navigator.clipboard.writeText(text);
+    btn.textContent='✓';
+    setTimeout(()=>btn.textContent='Copiar',1500);
+  }
+
+  /* ── reset ── */
+  function resetAll(silent=false) {
+    document.querySelectorAll('.pill').forEach(b=>b.classList.remove('active'));
+    document.getElementById('eventoCustom').value='';
+    document.getElementById('eventoCustom').classList.add('hidden');
+    document.getElementById('tituloInput').value='';
+    document.getElementById('pessoaInput').value='';
+    document.getElementById('pessoaNomeOnly').value='';
+    ['eventoSection','campanhaSection','tituloSection','pessoaSection','cargoRow','localSection']
+      .forEach(id=>document.getElementById(id).classList.add('hidden'));
+    document.getElementById('pessoaNomeOnly').classList.add('hidden');
+    selectedType=null;selectedLocal=null;selectedExt=null;selectedVersao=null;
+    selectedEvento=null;selectedCargo=null;selectedCampanha=null;
+    if(!silent){
+      const t=new Date();
+      document.getElementById('diaSelect').value=String(t.getDate()).padStart(2,'0');
+      document.getElementById('mesSelect').value=MESES[t.getMonth()];
+      document.getElementById('anoSelect').value=String(t.getFullYear()).slice(-2);
+    }
+    document.getElementById('versaoSelect').value = '';
+    selectedVersao = null;
+    // re-select .mp4
+    const mp4=document.querySelector('#extGroup .pill[data-ext=".mp4"]');
+    if(mp4){mp4.classList.add('active');selectedExt='.mp4';}
+    if(!silent) updateResult();
+  }
+
+  /* ── init ── */
+  (function(){
+    const mp4=document.querySelector('#extGroup .pill[data-ext=".mp4"]');
+    if(mp4){mp4.classList.add('active');selectedExt='.mp4';}
+    updateResult();
+    loadConfig();
+  })();
+</script>
+</body>
+</html>
