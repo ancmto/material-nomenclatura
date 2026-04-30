@@ -379,6 +379,7 @@
           <div class="select-wrap">
             <select id="versaoSelect" onchange="onVersaoChange()">
               <option value="">—</option>
+               <option value="APROVADO">APROVADO</option>
               <option value="V1">V1</option>
               <option value="V2">V2</option>
               <option value="V3">V3</option>
@@ -388,7 +389,7 @@
               <option value="CUT1">CUT1</option>
               <option value="CUT2">CUT2</option>
               <option value="CUT3">CUT3</option>
-              <option value="APROVADO">APROVADO</option>
+
             </select>
           </div>
         </div>
@@ -477,8 +478,7 @@ let CFG = {
     { label: "Programa Sucesso",      code: "PS"    },
     { label: "Terapia do Amor",       code: "TA"    },
     { label: "Corrente dos 70",       code: "C70"   },
-    { label: "Conc. Fé e Milagres",   code: "CFM"   },
-    { label: "Arca da Família",       code: "ARCA"  }
+    { label: "Conc. Fé e Milagres",   code: "CFM"   }
   ],
   cameras: [
     { label: "MIX",   code: "MIX"   },
@@ -557,7 +557,7 @@ function setDateToToday() {
   document.getElementById('dataAAalt').value = aa;
   // garante que checkbox volta a desmarcado e fields visíveis
   document.getElementById('semDataChk').checked = false;
-  document.getElementById('semDataChkAlt').checked = false;
+  document.getElementById('semDataChkAlt').checked = true;
   document.getElementById('dataFields').style.display    = 'flex';
   document.getElementById('dataFieldsAlt').style.display = 'flex';
 }
